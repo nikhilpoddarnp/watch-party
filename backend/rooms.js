@@ -42,3 +42,18 @@ export function getParticipantList(roomId) {
     role: data.role,
   }));
 }
+
+export function hasPlaybackPermission(roomId, socketId) {
+  const room = rooms[roomId];
+  if (!room) return false;
+  const participant = room.participants[socketId];
+  if (!participant) return false;
+  return participant.role === "host" || participant.role === "moderator";
+}
+
+export function updateVideoState(roomId, updates) {
+  const room = rooms[roomId];
+  if (!room) return null;
+  room.videoState = { ...room.videoState, ...updates };
+  return room.videoState;
+}

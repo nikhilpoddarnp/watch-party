@@ -3,8 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import { createRoom, getRoom, addParticipant, getParticipantList } from "./rooms.js";
-
+import { createRoom, getRoom, addParticipant, getParticipantList, hasPlaybackPermission, updateVideoState } from "./rooms.js";
 dotenv.config({ path: './env'});
 
 
@@ -17,12 +16,18 @@ const io = new Server(httpServer, {
   cors: {
     origin: "http://localhost:5173", // frontend dev URL
     methods: ["GET", "POST"],
+    // origin: "*" ,  // allow all origins for testing purposes
+     
   },
 });
 
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
   socket.on("join_room", ({ roomId, username }) => {
+    
+    // console.log("Room exists?", getRoom(roomId)); // Check if the room already exists
+
+
   let room = getRoom(roomId);
 
   if (!room) {
@@ -53,6 +58,52 @@ io.on("connection", (socket) => {
     role: myData.role,
     participants,
   });
+});
+
+socket.on("play", ({ currentTime }) => {
+  const roomId = socket.data.roomId;
+  if (!hasPlaybackPermission(roomId, socket.id)) return; // silently reject
+
+  const videoState = updateVideoState(roomId, {
+    playState: "playing",
+    currentTime,
+  });
+
+  io.to(roomId).emit("sync_state", videoState); // broadcast to EVERYONE including sender
+});
+
+socket.on("pause", ({ currentTime }) => {
+  const roomId = socket.data.roomId;
+  if (!hasPlaybackPermission(roomId, socket.id)) return;
+
+  const videoState = updateVideoState(roomId, {
+    playState: "paused",
+    currentTime,
+  });
+
+  io.to(roomId).emit("sync_state", videoState);
+});
+
+socket.on("seek", ({ time }) => {
+  const roomId = socket.data.roomId;
+  if (!hasPlaybackPermission(roomId, socket.id)) return;
+
+  const videoState = updateVideoState(roomId, { currentTime: time });
+
+  io.to(roomId).emit("sync_state", videoState);
+});
+
+socket.on("change_video", ({ videoId }) => {
+  const roomId = socket.data.roomId;
+  if (!hasPlaybackPermission(roomId, socket.id)) return;
+
+  const videoState = updateVideoState(roomId, {
+    videoId,
+    playState: "paused",
+    currentTime: 0,
+  });
+
+  io.to(roomId).emit("sync_state", videoState);
 });
 
   socket.on("disconnect", () => {
