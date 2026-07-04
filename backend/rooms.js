@@ -1,0 +1,44 @@
+// In-memory store: { roomId: { hostId, videoState, participants } }
+const rooms = {};
+
+export function createRoom(roomId, hostSocketId, hostUsername) {
+  rooms[roomId] = {
+    hostId: hostSocketId,
+    videoState: {
+      videoId: null,
+      playState: "paused",
+      currentTime: 0,
+    },
+    participants: {
+      [hostSocketId]: {
+        username: hostUsername,
+        role: "host",
+      },
+    },
+  };
+  return rooms[roomId];
+}
+
+export function getRoom(roomId) {
+  return rooms[roomId];
+}
+
+export function addParticipant(roomId, socketId, username) {
+  const room = rooms[roomId];
+  if (!room) return null;
+  room.participants[socketId] = {
+    username,
+    role: "participant",
+  };
+  return room;
+}
+
+export function getParticipantList(roomId) {
+  const room = rooms[roomId];
+  if (!room) return [];
+  return Object.entries(room.participants).map(([socketId, data]) => ({
+    userId: socketId,
+    username: data.username,
+    role: data.role,
+  }));
+}
