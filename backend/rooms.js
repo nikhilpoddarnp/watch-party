@@ -79,3 +79,37 @@ export function removeParticipant(roomId, targetUserId) {
   delete room.participants[targetUserId];
   return room;
 }
+
+export function handleDisconnect(roomId, socketId) {
+  const room = rooms[roomId];
+  if (!room) return null;
+
+  const wasHost = room.hostId === socketId;
+  delete room.participants[socketId];
+
+  const remainingIds = Object.keys(room.participants);
+
+  // Room is now empty — delete it entirely
+  if (remainingIds.length === 0) {
+    delete rooms[roomId];
+    return { deleted: true };
+  }
+
+  // Host left — promote the next available participant
+  let newHostId = null;
+  if (wasHost) {
+    newHostId = remainingIds[0];
+    room.hostId = newHostId;
+    room.participants[newHostId].role = "host";
+  }
+
+  return {
+    deleted: false,
+    newHostId,
+    participants: Object.entries(room.participants).map(([id, data]) => ({
+      userId: id,
+      username: data.username,
+      role: data.role,
+    })),
+  };
+}

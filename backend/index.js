@@ -3,7 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import { createRoom, getRoom, addParticipant, getParticipantList, hasPlaybackPermission, updateVideoState, isHost, assignRole, removeParticipant } from "./rooms.js";
+import { createRoom, getRoom, addParticipant, getParticipantList, hasPlaybackPermission, updateVideoState, isHost, assignRole, removeParticipant, handleDisconnect } from "./rooms.js";
 dotenv.config({ path: './env'});
 
 
@@ -144,9 +144,25 @@ socket.on("remove_participant", ({ userId }) => {
   io.to(roomId).emit("participant_removed", { userId, participants });
 });
 
-  socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+ socket.on("disconnect", () => {
+  const roomId = socket.data.roomId;
+  if (!roomId) return; // never joined a room, nothing to clean up
+
+  const result = handleDisconnect(roomId, socket.id);
+  if (!result || result.deleted) return; // room deleted, nothing to broadcast to
+
+  if (result.newHostId) {
+    io.to(roomId).emit("new_host", {
+      newHostId: result.newHostId,
+      participants: result.participants,
+    });
+  }
+
+  io.to(roomId).emit("user_left", {
+    userId: socket.id,
+    participants: result.participants,
   });
+});
 });
 
 
