@@ -57,3 +57,25 @@ export function updateVideoState(roomId, updates) {
   room.videoState = { ...room.videoState, ...updates };
   return room.videoState;
 }
+
+export function isHost(roomId, socketId) {
+  const room = rooms[roomId];
+  if (!room) return false;
+  return room.hostId === socketId;
+}
+
+export function assignRole(roomId, targetUserId, newRole) {
+  const room = rooms[roomId];
+  if (!room) return null;
+  if (!room.participants[targetUserId]) return null;
+
+  room.participants[targetUserId].role = newRole;
+  return room;
+}
+
+export function removeParticipant(roomId, targetUserId) {
+  const room = rooms[roomId];
+  if (!room) return null;
+  delete room.participants[targetUserId];
+  return room;
+}

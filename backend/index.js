@@ -3,7 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import { createRoom, getRoom, addParticipant, getParticipantList, hasPlaybackPermission, updateVideoState } from "./rooms.js";
+import { createRoom, getRoom, addParticipant, getParticipantList, hasPlaybackPermission, updateVideoState, isHost, assignRole, removeParticipant } from "./rooms.js";
 dotenv.config({ path: './env'});
 
 
@@ -14,9 +14,9 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173", // frontend dev URL
-    methods: ["GET", "POST"],
-    // origin: "*" ,  // allow all origins for testing purposes
+    // origin: "http://localhost:5173", // frontend dev URL
+    // methods: ["GET", "POST"],
+    origin: "*" ,  // allow all origins for testing purposes
      
   },
 });
@@ -104,6 +104,44 @@ socket.on("change_video", ({ videoId }) => {
   });
 
   io.to(roomId).emit("sync_state", videoState);
+});
+
+socket.on("assign_role", ({ userId, role }) => {
+  const roomId = socket.data.roomId;
+  if (!isHost(roomId, socket.id)) return; // Host-only
+
+  const validRoles = ["host", "moderator", "participant"];
+  if (!validRoles.includes(role)) return;
+
+  const room = assignRole(roomId, userId, role);
+  if (!room) return;
+
+  const participants = getParticipantList(roomId);
+  const target = room.participants[userId];
+
+  io.to(roomId).emit("role_assigned", {
+    userId,
+    username: target.username,
+    role,
+    participants,
+  });
+});
+
+socket.on("remove_participant", ({ userId }) => {
+  const roomId = socket.data.roomId;
+  if (!isHost(roomId, socket.id)) return; // Host-only
+
+  removeParticipant(roomId, userId);
+  const participants = getParticipantList(roomId);
+
+  // Tell the removed user specifically, so their frontend can redirect them
+  io.to(userId).emit("you_were_removed");
+
+  // Force-disconnect their socket from the room
+  const targetSocket = io.sockets.sockets.get(userId);
+  if (targetSocket) targetSocket.leave(roomId);
+
+  io.to(roomId).emit("participant_removed", { userId, participants });
 });
 
   socket.on("disconnect", () => {
