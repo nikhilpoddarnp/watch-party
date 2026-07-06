@@ -105,8 +105,7 @@ function Room() {
   canControl={myRole === "host" || myRole === "moderator"} 
     />
 
-      <h3>Video State (debug)</h3>
-      <pre>{JSON.stringify(videoState, null, 2)}</pre>
+     
     </div>
   );
 }
