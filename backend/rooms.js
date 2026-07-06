@@ -1,4 +1,3 @@
-// In-memory store: { roomId: { hostId, videoState, participants } }
 const rooms = {};
 
 export function createRoom(roomId, hostSocketId, hostUsername) {
@@ -6,9 +5,10 @@ export function createRoom(roomId, hostSocketId, hostUsername) {
     hostId: hostSocketId,
     videoState: {
       videoId: null,
-      playState: "paused",
+      playState: "play",
       currentTime: 0,
     },
+
     participants: {
       [hostSocketId]: {
         username: hostUsername,
@@ -54,8 +54,26 @@ export function hasPlaybackPermission(roomId, socketId) {
 export function updateVideoState(roomId, updates) {
   const room = rooms[roomId];
   if (!room) return null;
-  room.videoState = { ...room.videoState, ...updates };
+  room.videoState = {
+    ...room.videoState,
+    ...updates,
+    lastUpdatedAt: Date.now(),
+  };
   return room.videoState;
+}
+
+export function getInterpolatedState(roomId) {
+  const room = rooms[roomId];
+  if (!room) return null;
+
+  const { videoId, playState, currentTime, lastUpdatedAt } = room.videoState;
+
+  if (playState === "playing" && lastUpdatedAt) {
+    const elapsedSeconds = (Date.now() - lastUpdatedAt) / 1000;
+    return { videoId, playState, currentTime: currentTime + elapsedSeconds };
+  }
+
+  return { videoId, playState, currentTime };
 }
 
 export function isHost(roomId, socketId) {
@@ -89,13 +107,11 @@ export function handleDisconnect(roomId, socketId) {
 
   const remainingIds = Object.keys(room.participants);
 
-  // Room is now empty — delete it entirely
   if (remainingIds.length === 0) {
     delete rooms[roomId];
     return { deleted: true };
   }
 
-  // Host left — promote the next available participant
   let newHostId = null;
   if (wasHost) {
     newHostId = remainingIds[0];
