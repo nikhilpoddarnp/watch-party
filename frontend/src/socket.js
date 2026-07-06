@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:5000", {
+const socket = io(import.meta.env.VITE_BACKEND_URL || "https://watch-party-j0jw.onrender.com", {
   autoConnect: false, 
 });
 
