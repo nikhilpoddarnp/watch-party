@@ -1,0 +1,126 @@
+.home-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Signature element: ambient marquee bulbs drifting behind the card */
+.marquee-dots {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  place-items: center;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.4); }
+}
+
+.home-card {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.home-card h1 {
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0.5rem 0 1.75rem;
+}
+
+.name-input {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #1a1204;
+  font-weight: 600;
+  padding: 0.7rem;
+  font-size: 0.95rem;
+}
+
+.btn-primary:hover {
+  background: #ffb941;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.divider span {
+  padding: 0 0.75rem;
+}
+
+.join-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.join-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  padding: 0.6rem 1rem;
+}
+
+.btn-secondary:hover {
+  background: var(--accent-dim);
+}

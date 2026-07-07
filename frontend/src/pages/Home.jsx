@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { nanoid } from "nanoid";
 import socket from "../socket";
+import "./Home.css";
 
 function Home() {
   const [username, setUsername] = useState("");
@@ -9,35 +10,57 @@ function Home() {
   const navigate = useNavigate();
 
   const handleCreateRoom = () => {
-    if (!username.trim()) return alert("Enter a username");
-    const newRoomId = nanoid(6); 
+    if (!username.trim()) return alert("Enter a name first");
+    const newRoomId = nanoid(6);
     navigate(`/room/${newRoomId}`, { state: { username } });
   };
 
   const handleJoinRoom = () => {
-    if (!username.trim() || !roomCode.trim()) return alert("Enter username and room code");
-    navigate(`/room/${roomCode}`, { state: { username } });
+    if (!username.trim() || !roomCode.trim()) return alert("Enter a name and room code");
+    navigate(`/room/${roomCode.trim()}`, { state: { username } });
   };
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "400px", margin: "0 auto" }}>
-      <h1>Watch Party</h1>
-      <input
-        placeholder="Your name"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
-      <br /><br />
-      <button onClick={handleCreateRoom}>Create Room</button>
+    <div className="home-wrap">
+      <div className="marquee-dots" aria-hidden="true">
+        {Array.from({ length: 24 }).map((_, i) => (
+          <span key={i} className="dot" style={{ animationDelay: `${i * 0.08}s` }} />
+        ))}
+      </div>
 
-      <hr />
+      <div className="home-card">
+        <p className="eyebrow">Now Screening</p>
+        <h1>Watch Party</h1>
+        <p className="subtitle">One room. One video. Everyone in sync.</p>
 
-      <input
-        placeholder="Room code"
-        value={roomCode}
-        onChange={(e) => setRoomCode(e.target.value)}
-      />
-      <button onClick={handleJoinRoom}>Join Room</button>
+        <input
+          className="name-input"
+          placeholder="Your name"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleCreateRoom()}
+        />
+
+        <button className="btn-primary" onClick={handleCreateRoom}>
+          Start a Room
+        </button>
+
+        <div className="divider">
+          <span>or join one</span>
+        </div>
+
+        <div className="join-row">
+          <input
+            placeholder="Room code"
+            value={roomCode}
+            onChange={(e) => setRoomCode(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
+          />
+          <button className="btn-secondary" onClick={handleJoinRoom}>
+            Join
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

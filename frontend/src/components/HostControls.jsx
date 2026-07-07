@@ -10,26 +10,31 @@ function HostControls({ participants, myUserId }) {
     socket.emit("remove_participant", { userId });
   };
 
+  const others = participants.filter((p) => p.userId !== myUserId);
+
   return (
-    <div style={{ margin: "1rem 0", padding: "1rem", border: "1px solid #ccc" }}>
+    <div className="panel">
       <h3>Host Controls</h3>
-      {participants
-        .filter((p) => p.userId !== myUserId) 
-        .map((p) => (
-          <div key={p.userId} style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
-            <span style={{ minWidth: "120px" }}>{p.username} ({p.role})</span>
-
-            <select
-              value={p.role}
-              onChange={(e) => handleAssignRole(p.userId, e.target.value)}
-            >
-              <option value="participant">Participant</option>
-              <option value="moderator">Moderator</option>
-            </select>
-
-            <button onClick={() => handleRemove(p.userId)}>Remove</button>
-          </div>
-        ))}
+      {others.length === 0 && (
+        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+          No one else has joined yet.
+        </p>
+      )}
+      {others.map((p) => (
+        <div className="host-control-row" key={p.userId}>
+          <span style={{ minWidth: "70px", fontSize: "0.85rem" }}>{p.username}</span>
+          <select
+            value={p.role}
+            onChange={(e) => handleAssignRole(p.userId, e.target.value)}
+          >
+            <option value="participant">Participant</option>
+            <option value="moderator">Moderator</option>
+          </select>
+          <button className="remove-btn" onClick={() => handleRemove(p.userId)}>
+            Remove
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

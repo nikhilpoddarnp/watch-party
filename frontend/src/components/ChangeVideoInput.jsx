@@ -16,12 +16,12 @@ function ChangeVideoInput() {
   };
 
   return (
-    <div style={{ margin: "1rem 0" }}>
+    <div className="change-video-row">
       <input
-        placeholder="Paste YouTube URL"
+        placeholder="Paste a YouTube URL"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        style={{ width: "300px" }}
+        onKeyDown={(e) => e.key === "Enter" && handleChangeVideo()}
       />
       <button onClick={handleChangeVideo}>Change Video</button>
     </div>

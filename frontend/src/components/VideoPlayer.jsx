@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import socket from "../socket";
 
 function VideoPlayer({ videoState, canControl }) {
@@ -6,17 +6,22 @@ function VideoPlayer({ videoState, canControl }) {
   const playerInstance = useRef(null);
   const isRemoteUpdate = useRef(false);
   const hasCreatedPlayer = useRef(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
   useEffect(() => {
     if (hasCreatedPlayer.current) return;
     if (!videoState.videoId) return;
 
     function createPlayer() {
       playerInstance.current = new window.YT.Player(playerRef.current, {
-        height: "390",
-        width: "640",
+        height: "100%",
+        width: "100%",
         videoId: videoState.videoId,
         playerVars: {
           start: Math.floor(videoState.currentTime),
+          controls: 0,
+          disablekb: 1,
         },
         events: {
           onReady: () => {
@@ -29,7 +34,6 @@ function VideoPlayer({ videoState, canControl }) {
           onStateChange: handlePlayerStateChange,
         },
       });
-      hasCreatedPlayer.current = true;
     }
 
     if (window.YT && window.YT.Player) {
@@ -37,7 +41,7 @@ function VideoPlayer({ videoState, canControl }) {
     } else {
       window.onYouTubeIframeAPIReady = createPlayer;
     }
-  }, [videoState.videoId]); 
+  }, [videoState.videoId]);
 
   function handlePlayerStateChange(event) {
     if (isRemoteUpdate.current) {
@@ -47,7 +51,6 @@ function VideoPlayer({ videoState, canControl }) {
     if (!canControl) return;
 
     const currentTime = playerInstance.current.getCurrentTime();
-
     if (event.data === window.YT.PlayerState.PLAYING) {
       socket.emit("play", { currentTime });
     } else if (event.data === window.YT.PlayerState.PAUSED) {
@@ -55,7 +58,6 @@ function VideoPlayer({ videoState, canControl }) {
     }
   }
 
-  
   useEffect(() => {
     const player = playerInstance.current;
     if (!player || !player.getPlayerState || !hasCreatedPlayer.current) return;
@@ -82,8 +84,28 @@ function VideoPlayer({ videoState, canControl }) {
       player.pauseVideo();
     }
   }, [videoState]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const player = playerInstance.current;
+      if (player && player.getCurrentTime) {
+        setCurrentTime(player.getCurrentTime());
+        setDuration(player.getDuration());
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSeek = (e) => {
+    const newTime = Number(e.target.value);
+    isRemoteUpdate.current = false;
+    playerInstance.current.seekTo(newTime, true);
+    setCurrentTime(newTime);
+    socket.emit("seek", { time: newTime });
+  };
+
   const handlePlayClick = () => {
-    isRemoteUpdate.current = false; 
+    isRemoteUpdate.current = false;
     playerInstance.current.playVideo();
   };
 
@@ -92,13 +114,57 @@ function VideoPlayer({ videoState, canControl }) {
     playerInstance.current.pauseVideo();
   };
 
+  const handleFullscreen = () => {
+    const player = playerInstance.current;
+    if (!player || !player.getIframe) return;
+    const iframe = player.getIframe();
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen();
+    } else if (iframe.webkitRequestFullscreen) {
+      iframe.webkitRequestFullscreen(); // Safari
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen(); // old Edge/IE
+    }
+  };
+
+  const formatTime = (s) => {
+    if (!s || isNaN(s)) return "0:00";
+    const mins = Math.floor(s / 60);
+    const secs = Math.floor(s % 60).toString().padStart(2, "0");
+    return `${mins}:${secs}`;
+  };
+
   return (
     <div>
-      <div ref={playerRef}></div>
+      <div className="player-frame">
+        <div ref={playerRef}></div>
+      </div>
+
       {canControl && (
-        <div style={{ marginTop: "0.5rem" }}>
-          <button onClick={handlePlayClick}>▶ Play</button>
-          <button onClick={handlePauseClick}>⏸ Pause</button>
+        <div className="custom-controls">
+          <button className="control-btn" onClick={handlePlayClick} aria-label="Play">▶</button>
+          <button className="control-btn" onClick={handlePauseClick} aria-label="Pause">⏸</button>
+          <input
+            type="range"
+            className="seek-bar"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={handleSeek}
+          />
+          <span className="time-label">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
+          <button className="control-btn fullscreen-btn" onClick={handleFullscreen} aria-label="Fullscreen">
+            ⛶
+          </button>
+        </div>
+      )}
+      {!canControl && (
+        <div className="custom-controls">
+          <button className="control-btn fullscreen-btn" onClick={handleFullscreen} aria-label="Fullscreen">
+            ⛶
+          </button>
         </div>
       )}
     </div>
